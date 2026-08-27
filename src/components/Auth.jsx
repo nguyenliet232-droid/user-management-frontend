@@ -14,11 +14,14 @@ function Auth({ onLoginSuccess }) {
       : { email, password };
 
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyData),
-      });
+      const res = await fetch(
+        `https://user-management-backend-7clg.onrender.com/api/auth/${endpoint}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyData),
+        },
+      );
 
       const data = await res.json();
 
