@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUserStore } from "../store/useUserStore";
-import useDebounce from "../hooks/useDebounce";
+import { useDebounce } from "../hooks/useDebounce";
 
 function UserList() {
   const { users, loading, error, fetchUsers, deleteUser } = useUserStore();
