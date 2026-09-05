@@ -1,11 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Auth from "./components/Auth";
 import UserList from "./components/UserList";
 import Profile from "./components/Profile";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("users"); // 'users' hoặc 'profile'
+  const [activeTab, setActiveTab] = useState("users");
+  const [loading, setLoading] = useState(true); // Trạng thái chờ kiểm tra đăng nhập
+
+  // 🔄 Tự động khôi phục phiên đăng nhập khi F5 lại trang
+  useEffect(() => {
+    const checkLoggedInUser = async () => {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        try {
+          const res = await fetch(
+            "https://user-management-backend-7clg.onrender.com/api/users/profile",
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          const data = await res.json();
+          if (res.ok) {
+            setCurrentUser(data); // Tự động đăng nhập lại
+          } else {
+            localStorage.removeItem("token"); // Token hết hạn thì xóa đi
+          }
+        } catch (err) {
+          console.error("Lỗi xác thực phiên đăng nhập:", err);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkLoggedInUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
+        ⏳ Đang tải phiên đăng nhập...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
