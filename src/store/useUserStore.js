@@ -32,7 +32,7 @@ export const useUserStore = create((set, get) => ({
         get().fetchUsers();
         return true;
       }
-    } catch (err) {
+    } catch {
       alert("❌ Lỗi khi thêm người dùng!");
     }
     return false;
@@ -44,7 +44,7 @@ export const useUserStore = create((set, get) => ({
       if (res.ok) {
         get().fetchUsers();
       }
-    } catch (err) {
+    } catch {
       alert("❌ Lỗi khi xóa");
     }
   },

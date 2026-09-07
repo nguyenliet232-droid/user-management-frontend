@@ -73,7 +73,7 @@ function Profile({ onUpdateSuccess }) {
         setProfileMsg(`❌ ${data.message || "Cập nhật thất bại!"}`);
         setIsProfileSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setProfileMsg("❌ Lỗi kết nối máy chủ!");
       setIsProfileSuccess(false);
     } finally {
@@ -87,7 +87,7 @@ function Profile({ onUpdateSuccess }) {
     setPasswordMsg("");
 
     if (newPassword !== confirmPassword) {
-      setPasswordMsg("❌ Mật khẩu mới và Xóa nhận mật khẩu không khớp!");
+      setPasswordMsg("❌ Mật khẩu mới và Xác nhận mật khẩu không khớp!");
       setIsPasswordSuccess(false);
       return;
     }
@@ -119,7 +119,7 @@ function Profile({ onUpdateSuccess }) {
         setPasswordMsg(`❌ ${data.message}`);
         setIsPasswordSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setPasswordMsg("❌ Lỗi kết nối máy chủ!");
       setIsPasswordSuccess(false);
     } finally {

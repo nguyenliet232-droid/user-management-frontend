@@ -37,7 +37,7 @@ function Auth({ onLoginSuccess }) {
       } else {
         alert(`❌ ${data.message}`);
       }
-    } catch (err) {
+    } catch {
       alert("❌ Lỗi kết nối máy chủ!");
     }
   };
