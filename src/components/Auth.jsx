@@ -50,7 +50,7 @@ function Auth({ onLoginSuccess }) {
         setMessage(`❌ ${data.message || "Thao tác thất bại!"}`);
         setIsSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Lỗi kết nối máy chủ!");
       setIsSuccess(false);
     } finally {
@@ -83,7 +83,7 @@ function Auth({ onLoginSuccess }) {
         setMessage(`❌ ${data.message}`);
         setIsSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Lỗi kết nối máy chủ!");
       setIsSuccess(false);
     } finally {
@@ -121,7 +121,7 @@ function Auth({ onLoginSuccess }) {
         setMessage(`❌ ${data.message}`);
         setIsSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Lỗi kết nối máy chủ!");
       setIsSuccess(false);
     } finally {
