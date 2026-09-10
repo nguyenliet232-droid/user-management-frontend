@@ -111,6 +111,7 @@ function App() {
               <UserList />
             ) : (
               <Profile
+                currentUser={currentUser}
                 onUpdateSuccess={(updatedUser) =>
                   setCurrentUser((prev) => ({
                     ...prev,

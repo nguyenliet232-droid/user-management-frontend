@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-function Profile({ onUpdateSuccess }) {
+function Profile({ currentUser, onUpdateSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [profileMsg, setProfileMsg] = useState("");
@@ -127,6 +127,13 @@ function Profile({ onUpdateSuccess }) {
     }
   };
 
+  // Hàm lấy URL avatar: Ưu tiên dùng avatar user nhập -> Nếu không có thì tự tạo theo tên
+  const getAvatarUrl = (user) => {
+    if (user?.avatar) return user.avatar;
+    const name = user?.name || "User";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
+  };
+
   return (
     <div className="max-w-md mx-auto my-6 space-y-6">
       {/* CARD 1: CẬP NHẬT TÊN */}
@@ -215,7 +222,6 @@ function Profile({ onUpdateSuccess }) {
               placeholder="••••••••"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Mật khẩu mới
@@ -229,7 +235,6 @@ function Profile({ onUpdateSuccess }) {
               placeholder="••••••••"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Xác nhận mật khẩu mới
@@ -243,7 +248,14 @@ function Profile({ onUpdateSuccess }) {
               placeholder="••••••••"
             />
           </div>
-
+          {/* Giao diện hiển thị */}
+          <div className="flex flex-col items-center gap-4">
+            <img
+              src={getAvatarUrl(currentUser)}
+              alt="Avatar"
+              className="w-24 h-24 rounded-full object-cover border-2 border-indigo-500 shadow"
+            />
+          </div>
           <button
             type="submit"
             disabled={loadingPassword}
