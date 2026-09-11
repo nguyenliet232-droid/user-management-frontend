@@ -96,8 +96,15 @@ function Profile({ currentUser, onUpdateSuccess }) {
       if (res.ok) {
         setProfileMsg("🎉 Cập nhật ảnh đại diện thành công!");
         setIsProfileSuccess(true);
-        if (onUpdateSuccess)
-          onUpdateSuccess({ ...currentUser, avatar: base64Image });
+
+        // 1. Tạo object user mới chứa avatar
+        const updatedUser = { ...currentUser, avatar: base64Image };
+
+        // 2. Lưu vào LocalStorage
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+
+        // 3. Truyền updatedUser ra ngoài cho App/Header cập nhật
+        if (onUpdateSuccess) onUpdateSuccess(updatedUser);
       } else {
         setProfileMsg(`❌ ${data.message || "Cập nhật ảnh thất bại!"}`);
         setIsProfileSuccess(false);

@@ -41,6 +41,15 @@ function App() {
     checkLoggedInUser();
   }, []);
 
+  // 📍 Hàm tạo URL Avatar (Ưu tiên avatar Base64 -> Fallback ui-avatars)
+  const getHeaderAvatar = (user) => {
+    if (user?.avatar) return user.avatar;
+    const displayName = user?.name || "User";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      displayName,
+    )}&background=random&color=fff&size=64`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
@@ -57,14 +66,23 @@ function App() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             🚀 React Mastery - Mini App
           </h1>
+
           {currentUser && (
             <div className="flex items-center gap-3">
-              <span className="text-sm bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                👤 {currentUser.name}
-              </span>
+              {/* 📍 Khung hiển thị Avatar tròn + Tên người dùng */}
+              <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <img
+                  src={getHeaderAvatar(currentUser)}
+                  alt="Avatar"
+                  className="w-6 h-6 rounded-full object-cover border border-indigo-400"
+                />
+                <span className="text-sm font-medium">{currentUser.name}</span>
+              </div>
+
               <button
                 onClick={() => {
                   localStorage.removeItem("token");
+                  localStorage.removeItem("user");
                   setCurrentUser(null);
                 }}
                 className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition"
