@@ -6,9 +6,9 @@ import Profile from "./components/Profile";
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("users");
-  const [loading, setLoading] = useState(true); // Trạng thái chờ kiểm tra đăng nhập
+  const [loading, setLoading] = useState(true);
 
-  // 🔄 Tự động khôi phục phiên đăng nhập khi F5 lại trang
+  // 🔄 Khôi phục phiên đăng nhập
   useEffect(() => {
     const checkLoggedInUser = async () => {
       const token = localStorage.getItem("token");
@@ -27,9 +27,9 @@ function App() {
 
           const data = await res.json();
           if (res.ok) {
-            setCurrentUser(data); // Tự động đăng nhập lại
+            setCurrentUser(data);
           } else {
-            localStorage.removeItem("token"); // Token hết hạn thì xóa đi
+            localStorage.removeItem("token");
           }
         } catch (err) {
           console.error("Lỗi xác thực phiên đăng nhập:", err);
@@ -61,9 +61,9 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
       {/* Header */}
-      <header className="bg-slate-900 text-white py-6 shadow-md">
+      <header className="bg-slate-900 text-white py-4 shadow-md">
         <div className="max-w-4xl mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2">
             🚀 React Mastery - Mini App
           </h1>
 
@@ -130,10 +130,11 @@ function App() {
             ) : (
               <Profile
                 currentUser={currentUser}
+                // 📍 Cập nhật toàn bộ object updatedUser bao gồm cả avatar
                 onUpdateSuccess={(updatedUser) =>
                   setCurrentUser((prev) => ({
                     ...prev,
-                    name: updatedUser.name,
+                    ...updatedUser,
                   }))
                 }
               />
