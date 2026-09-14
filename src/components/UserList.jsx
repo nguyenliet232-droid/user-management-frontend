@@ -75,6 +75,12 @@ function UserList() {
           </li>
         ))}
       </ul>
+
+      {!loading && !error && filteredUsers.length === 0 && (
+        <p className="py-4 text-center text-slate-500">
+          Không tìm thấy người dùng phù hợp.
+        </p>
+      )}
     </div>
   );
 }

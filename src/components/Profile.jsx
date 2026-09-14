@@ -53,24 +53,62 @@ function Profile({ currentUser, onUpdateSuccess }) {
     fileInputRef.current.click();
   };
 
+  const compressImage = (file, maxWidth = 300, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Tính toán tỷ lệ để thu nhỏ ảnh
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxWidth) {
+              width = Math.round((width * maxWidth) / height);
+              height = maxWidth;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Trả về chuổi Base64 đã nén dung lượng
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+      };
+    });
+  };
+
   // Đọc file ảnh và chuyển sang chuỗi Base64
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setProfileMsg("❌ Vui lòng chọn ảnh dung lượng dưới 2MB!");
-      setIsProfileSuccess(false);
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chỉ chọn file hình ảnh");
       return;
     }
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = async () => {
-      const base64Image = reader.result;
-      setAvatar(base64Image);
-      await uploadAvatarToBackend(base64Image);
-    };
+    try {
+      //tự động nén ảnh trước khi chuyển sang Base64
+      const compressedBase64 = await compressImage(file);
+
+      // Gọi hàm upload base64 lên Backend như củ
+      uploadAvatarToBackend(compressedBase64);
+    } catch (error) {
+      console.error("Lỗi khi nén ảnh:", error);
+    }
   };
 
   // Gửi ảnh đại diện lên Render
