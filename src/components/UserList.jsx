@@ -20,6 +20,15 @@ function UserList() {
       user.email?.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
 
+  // 📍 Hàm lấy URL Avatar (sửa lại domain ui-avatars.com có chữ s)
+  const getUserAvatar = (user) => {
+    if (user?.avatar) return user.avatar;
+    const displayName = user?.name || "User";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      displayName,
+    )}&background=random&color=fff&size=64`;
+  };
+
   return (
     <div className="max-w-2xl mx-auto my-8 p-6 bg-white rounded-xl shadow-lg">
       <h3 className="text-xl font-bold mb-4 text-slate-800">
@@ -42,12 +51,21 @@ function UserList() {
         {filteredUsers.map((u) => (
           <li
             key={u._id || u.id}
-            className="py-3 flex justify-between items-center"
+            className="py-3 flex justify-between items-center gap-3"
           >
-            <div>
-              <p className="font-semibold text-slate-700">{u.name}</p>
-              <p className="text-sm text-slate-500">{u.email}</p>
+            {/* 📍 Khung hiển thị Avatar + Thông tin người dùng nằm trong vòng lặp map */}
+            <div className="flex items-center gap-3">
+              <img
+                src={getUserAvatar(u)}
+                alt={u.name}
+                className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
+              />
+              <div>
+                <p className="font-semibold text-slate-700">{u.name}</p>
+                <p className="text-sm text-slate-500">{u.email}</p>
+              </div>
             </div>
+
             <button
               onClick={() => deleteUser(u._id || u.id)}
               className="px-3 py-1 text-xs bg-red-100 text-red-600 hover:bg-red-200 font-medium rounded-md transition"
