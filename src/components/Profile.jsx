@@ -12,6 +12,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
   const [newPassword, setNewPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
   const [isPasswordSuccess, setIsPasswordSuccess] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const fileInputRef = useRef(null);
 
@@ -118,8 +119,14 @@ function Profile({ currentUser, onUpdateSuccess }) {
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
-    if (!currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordMsg("❌ Vui lòng nhập đầy đủ mật khẩu cũ và mới!");
+      setIsPasswordSuccess(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg("❌ Mật khẩu mới và Xác nhận mật khẩu không khớp!");
       setIsPasswordSuccess(false);
       return;
     }
@@ -292,6 +299,19 @@ function Profile({ currentUser, onUpdateSuccess }) {
               placeholder="••••••••"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
+              Xác nhận mật khẩu mới
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
             />
           </div>
