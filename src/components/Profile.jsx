@@ -314,8 +314,10 @@ function Profile({ currentUser, onUpdateSuccess }) {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400"
-              ></button>
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-sm"
+              >
+                {showNewPassword ? "👁️" : "🙈"}
+              </button>
             </div>
           </div>
 
@@ -323,13 +325,22 @@ function Profile({ currentUser, onUpdateSuccess }) {
             <label className="block text-xs font-semibold text-slate-500 mb-1">
               Xác nhận mật khẩu mới
             </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-sm"
+              >
+                {showConfirmPassword ? "👁️" : "🙈"}
+              </button>
+            </div>
           </div>
 
           <button
