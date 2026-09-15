@@ -13,6 +13,9 @@ function Profile({ currentUser, onUpdateSuccess }) {
   const [passwordMsg, setPasswordMsg] = useState("");
   const [isPasswordSuccess, setIsPasswordSuccess] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -161,7 +164,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
         setPasswordMsg(`❌ ${data.message || "Đổi mật khẩu thất bại!"}`);
         setIsPasswordSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setPasswordMsg("❌ Lỗi kết nối đến máy chủ!");
       setIsPasswordSuccess(false);
     }
