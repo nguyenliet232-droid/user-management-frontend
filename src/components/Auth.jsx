@@ -276,6 +276,7 @@ function Auth({ onLoginSuccess }) {
               />
             </div>
 
+            {/* 👁️ Mật khẩu mới trong Quên mật khẩu */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Mật khẩu mới
@@ -334,6 +335,7 @@ function Auth({ onLoginSuccess }) {
             />
           </div>
 
+          {/* 👁️ Mật khẩu trong Đăng nhập */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Mật khẩu
@@ -427,6 +429,7 @@ function Auth({ onLoginSuccess }) {
                 />
               </div>
 
+              {/* 👁️ Mật khẩu trong Đăng ký */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Mật khẩu
