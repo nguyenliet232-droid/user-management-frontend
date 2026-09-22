@@ -41,6 +41,14 @@ function App() {
     checkLoggedInUser();
   }, []);
 
+  // 📍 Hàm đăng xuất riêng biệt, dọn dẹp bộ nhớ và reset lại Tab về mặc định
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    setActiveTab("users");
+  };
+
   // 📍 Hàm tạo URL Avatar (Ưu tiên avatar Base64 -> Fallback ui-avatars)
   const getHeaderAvatar = (user) => {
     if (user?.avatar) return user.avatar;
@@ -79,12 +87,9 @@ function App() {
                 <span className="text-sm font-medium">{currentUser.name}</span>
               </div>
 
+              {/* 📍 Nút Đăng xuất đã gắn hàm handleLogout */}
               <button
-                onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user");
-                  setCurrentUser(null);
-                }}
+                onClick={handleLogout}
                 className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition"
               >
                 Đăng xuất
