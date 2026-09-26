@@ -6,6 +6,10 @@ function UserList() {
   const { users, loading, error, fetchUsers, deleteUser } = useUserStore();
   const [searchTerm, setSearchTerm] = useState("");
 
+  // 📍 1. State quản lý phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Số lượng người dùng trên mỗi trang
+
   // 📍 Lấy thông tin người dùng đang đăng nhập từ localStorage
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = currentUser?.role === "admin";
@@ -17,12 +21,23 @@ function UserList() {
     fetchUsers();
   }, [fetchUsers]);
 
+  // 📍 Reset về trang 1 mỗi khi người dùng tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
   // Lọc danh sách theo Tên hoặc Email
   const filteredUsers = users.filter(
     (user) =>
       user.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       user.email?.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
+
+  // 📍 2. Tính toán phân trang
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
 
   // Hàm lấy URL Avatar
   const getUserAvatar = (user) => {
@@ -57,7 +72,7 @@ function UserList() {
       {error && <p className="text-red-500">Lỗi: {error}</p>}
 
       <ul className="divide-y divide-slate-100">
-        {filteredUsers.map((u) => (
+        {currentUsers.map((u) => (
           <li
             key={u._id || u.id}
             className="py-3 flex justify-between items-center gap-3"
@@ -82,7 +97,7 @@ function UserList() {
               </div>
             </div>
 
-            {/* 📍 Chỉ hiển thị nút Xóa nếu người dùng đang đăng nhập có quyền Admin */}
+            {/* 📍 Chỉ hiển thị nút Xóa nếu là Admin và không tự xóa chính mình */}
             {isAdmin && (
               <button
                 onClick={() => {
@@ -103,6 +118,49 @@ function UserList() {
         <p className="py-4 text-center text-slate-500">
           Không tìm thấy người dùng phù hợp.
         </p>
+      )}
+
+      {/* 📍 3. Thanh điều hướng Phân trang (Pagination) */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+          <p className="text-xs text-slate-500">
+            Trang <span className="font-bold">{currentPage}</span> /{" "}
+            {totalPages} (Tổng {filteredUsers.length} người dùng)
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              ◀ Trước
+            </button>
+
+            {/* Các nút bấm số trang */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition ${
+                  currentPage === page
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              Sau ▶
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
