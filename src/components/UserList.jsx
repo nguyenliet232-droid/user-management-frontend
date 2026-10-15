@@ -31,11 +31,6 @@ function UserList() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // 📍 Reset về trang 1 mỗi khi người dùng tìm kiếm
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch]);
-
   // Lọc danh sách theo Tên hoặc Email
   const filteredUsers = users.filter(
     (user) =>
@@ -74,7 +69,10 @@ function UserList() {
         type="text"
         placeholder="🔍 Tìm kiếm theo tên hoặc email..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setCurrentPage(1);
+        }}
         className="w-full px-4 py-2 mb-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
       />
 

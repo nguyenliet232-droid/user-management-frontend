@@ -1,22 +1,14 @@
 import { useState } from "react";
 
-function Dashboard({ user, onLogout, onUserUpdate }) {
-  const [activeTab, setActiveTab] = useState("profile"); // "profile" | "changePassword"
-
-  // State cập nhật thông tin
+export default function Dashboard({ user, onLogout, onUserUpdate }) {
+  const [activeTab, setActiveTab] = useState("profile");
   const [name, setName] = useState(user?.name || "");
   const [avatar, setAvatar] = useState(user?.avatar || "");
-
-  // State đổi mật khẩu
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  // State ẩn/hiện mật khẩu
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
-
-  // State thông báo
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,44 +16,43 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
   const BASE_URL = "https://user-management-backend-7clg.onrender.com";
   const token = localStorage.getItem("token");
 
-  // 📍 1. Cập nhật thông tin cá nhân (Tên / Avatar)
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    setLoading(treu);
+    setLoading(true);
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/user/profile`, {
+      const res = await fetch(`${BASE_URL}/api/users/profile`, {
         method: "PUT",
         headers: {
           "Content-type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ name, avatar }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await res.json() : { message: await res.text() || `HTTP ${res.status}` };
       if (res.ok) {
-        setMessage("🎉 Cập nhật thông tin thành công!");
+        setMessage("?? C?p nh?t th?ng tin th?nh c?ng!");
         setIsSuccess(true);
         if (onUserUpdate) onUserUpdate(data.user);
       } else {
-        setMessage(`❌ ${data.message || "Cập nhật thất bại!"}`);
+        setMessage(`? ${data.message || "C?p nh?t th?t b?i!"}`);
         setIsSuccess(false);
       }
     } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+      setMessage("? L?i k?t n?i m?y ch?!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
     }
   };
 
-  // 📍 2. Đổi mật khẩu
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setMessage("❌ Mật khẩu xác nhận không khớp!");
+      setMessage("? M?t kh?u x?c nh?n kh?ng kh?p!");
       setIsSuccess(false);
       return;
     }
@@ -70,28 +61,29 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/user/change-password`, {
+      const res = await fetch(`${BASE_URL}/api/users/change-password`, {
         method: "PUT",
         headers: {
           "Content-type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ oldPassword, newPassword }),
+        body: JSON.stringify({ currentPassword: oldPassword, newPassword }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await res.json() : { message: await res.text() || `HTTP ${res.status}` };
       if (res.ok) {
-        setMessage("🎉 Đổi mật khẩu thành công!");
+        setMessage("?? ??i m?t kh?u th?nh c?ng!");
         setIsSuccess(true);
         setOldPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        setMessage(`❌ ${data.message || "Đổi mật khẩu thất bại!"}`);
+        setMessage(`? ${data.message || "??i m?t kh?u th?t b?i!"}`);
         setIsSuccess(false);
       }
     } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+      setMessage("? L?i k?t n?i m?y ch?!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -100,7 +92,6 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <div className="max-w-2xl mx-auto my-10 p-6 bg-white rounded-2xl shadow-xl border border-slate-100">
-      {/* Header Dashboard */}
       <div className="flex items-center justify-between pb-6 border-b border-slate-100">
         <div className="flex items-center space-x-4">
           <img
@@ -121,11 +112,10 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
           onClick={onLogout}
           className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded-lg text-sm transition"
         >
-          Đăng xuất 👋
+          ??ng xu?t ??
         </button>
       </div>
 
-      {/* Tabs Chức năng */}
       <div className="flex space-x-4 mt-6 border-b border-slate-200">
         <button
           onClick={() => {
@@ -138,7 +128,7 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          👤 Thông Tin Cá Nhân
+          ?? Th?ng Tin C? Nh?n
         </button>
         <button
           onClick={() => {
@@ -151,11 +141,10 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          🔒 Đổi Mật Khẩu
+          ?? ??i M?t Kh?u
         </button>
       </div>
 
-      {/* Thông báo */}
       {message && (
         <div
           className={`mt-4 p-3 rounded-lg text-sm font-medium text-center ${
@@ -168,12 +157,11 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
         </div>
       )}
 
-      {/* Nội dung Tab 1: Cập nhật Hồ sơ */}
       {activeTab === "profile" && (
         <form onSubmit={handleUpdateProfile} className="space-y-4 mt-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Họ và tên
+              H? v? t?n
             </label>
             <input
               type="text"
@@ -198,7 +186,7 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              URL Ảnh Đại Diện (Avatar)
+              URL ảnh đại Diện (Avatar)
             </label>
             <input
               type="url"
@@ -218,79 +206,7 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
           </button>
         </form>
       )}
-
-      {/* Nội dung Tab 2: Đổi mật khẩu */}
-      {activeTab === "changePassword" && (
-        <form onSubmit={handleChangePassword} className="space-y-4 mt-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Mật khẩu hiện tại
-            </label>
-            <div className="relative">
-              <input
-                type={showOldPass ? "text" : "password"}
-                required
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-4 py-2 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowOldPass(!showOldPass)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-sm"
-              >
-                {showOldPass ? "👁️" : "🙈"}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Mật khẩu mới
-            </label>
-            <div className="relative">
-              <input
-                type={showNewPass ? "text" : "password"}
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPass(!showNewPass)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-sm"
-              >
-                {showNewPass ? "👁️" : "🙈"}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Xác nhận mật khẩu mới
-            </label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md transition disabled:opacity-50"
-          >
-            {loading ? "Đang xử lý..." : "Đổi Mật Khẩu"}
-          </button>
-        </form>
-      )}
     </div>
   );
 }
+

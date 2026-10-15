@@ -1,17 +1,14 @@
 import { create } from "zustand";
 
-// Link API công khai Backend
 const API_URL = "https://user-management-backend-7clg.onrender.com/api";
 
 export const useUserStore = create((set, get) => ({
   users: [],
-  // 📍 1. Lấy thông tin user & token đã lưu từ localStorage khi khởi chạy
   user: JSON.parse(localStorage.getItem("user") || "null"),
   token: localStorage.getItem("token") || null,
   loading: false,
   error: null,
 
-  // 📍 2. Hàm Đăng Nhập (Login)
   login: async (email, password) => {
     set({ loading: true, error: null });
     try {
@@ -24,7 +21,6 @@ export const useUserStore = create((set, get) => ({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Đăng nhập thất bại!");
 
-      // Lưu Token và User (bao gồm role: "admin") vào localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
@@ -36,34 +32,45 @@ export const useUserStore = create((set, get) => ({
     }
   },
 
-  // 📍 3. Hàm Đăng Xuất (Logout)
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     set({ user: null, token: null, users: [] });
   },
 
-  // 📍 4. Lấy danh sách người dùng
   fetchUsers: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_URL}/users`);
-      if (!res.ok) throw new Error("Không thể tải dữ liệu!");
-      const data = await res.json();
-      const users = Array.isArray(data) ? data : data.users;
-      if (!Array.isArray(users)) {
-        throw new Error("Dữ liệu người dùng không hợp lệ!");
+      // Lấy token từ state hoặc trực tiếp từ localStorage
+      const token = get().token || localStorage.getItem("token");
+
+      const res = await fetch(`${API_URL}/users`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Lỗi server: ${res.status}`);
       }
+
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : [];
+      const users = Array.isArray(data) ? data : data.users || [];
+
       set({ users, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
   },
 
-  // 📍 5. Hàm Xóa Người Dùng (Đã bổ sung Authorization Header để gửi Token)
   deleteUser: async (id) => {
     if (!id) {
-      set({ error: "Không tìm thấy mã người dùng!" });
+      set({ error: "Không tìm thấy người dùng!" });
       return false;
     }
 
@@ -74,20 +81,23 @@ export const useUserStore = create((set, get) => ({
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // 👈 Bắt buộc phải có token này thì Backend mới cho xóa
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: (await res.text()) || `HTTP ${res.status}` };
 
       if (res.ok) {
-        await get().fetchUsers(); // Tải lại danh sách sau khi xóa thành công
+        await get().fetchUsers();
         return true;
-      } else {
-        throw new Error(data.message || "Không thể xóa người dùng!");
       }
+
+      throw new Error(data.message || "Không thể xóa người dùng!");
     } catch (err) {
-      alert(`❌ ${err.message}`);
+      alert(`Lỗi: ${err.message}`);
       set({ error: err.message });
       return false;
     }

@@ -50,6 +50,7 @@ function Auth({ onLoginSuccess }) {
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
         if (onLoginSuccess) onLoginSuccess(data.user);
       } else {
         setMessage(`❌ ${data.message || "Thao tác thất bại!"}`);
