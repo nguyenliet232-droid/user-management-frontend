@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+﻿import { useState, useEffect } from "react";
+import { Plus, Trash2, Edit3, Image as ImageIcon } from "lucide-react";
 
 const API_URL = "https://user-management-backend-7clg.onrender.com/api";
 
 function MovieList() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editMovieId, setEditMovieId] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -30,7 +32,9 @@ function MovieList() {
       }
 
       const contentType = res.headers.get("content-type") || "";
-      const data = contentType.includes("application/json") ? await res.json() : [];
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : [];
 
       setMovies(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -45,18 +49,70 @@ function MovieList() {
     fetchMovies();
   }, []);
 
-  const handleAddMovie = async (e) => {
+  // Xử lý chọn ảnh từ máy tính (Base64)
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPosterUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Mở modal thêm mới
+  const handleOpenAddModal = () => {
+    setIsEditing(false);
+    setEditMovieId(null);
+    setTitle("");
+    setDescription("");
+    setPosterUrl("");
+    setVideoUrl("");
+    setCategory("Hành động");
+    setShowModal(true);
+  };
+
+  // Mở modal sửa phim (Điền sẵn thông tin cũ)
+  const handleOpenEditModal = (movie) => {
+    setIsEditing(true);
+    setEditMovieId(movie._id);
+    setTitle(movie.title || "");
+    setDescription(movie.description || "");
+    setPosterUrl(movie.posterUrl || "");
+    setVideoUrl(movie.videoUrl || "");
+    setCategory(movie.category || "Hành động");
+    setShowModal(true);
+  };
+
+  // Gửi dữ liệu Thêm mới hoặc Cập nhật
+  const handleSubmitMovie = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Vui lòng đăng nhập để thêm phim!");
+      alert("Vui lòng đăng nhập để thực hiện thao tác này!");
+      return;
+    }
+
+    if (!posterUrl) {
+      alert("Vui lòng chọn ảnh poster cho phim!");
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}/movies`, {
-        method: "POST",
+      const url = isEditing
+        ? `${API_URL}/movies/${editMovieId}`
+        : `${API_URL}/movies`;
+
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -81,19 +137,16 @@ function MovieList() {
       }
 
       if (res.ok) {
-        alert("🎉 Thêm phim thành công!");
-        setTitle("");
-        setDescription("");
-        setPosterUrl("");
-        setVideoUrl("");
-        setCategory("Hành động");
-        setShowAddModal(false);
+        alert(
+          isEditing ? "Cập nhật phim thành công!" : "🎉 Thêm phim thành công!",
+        );
+        setShowModal(false);
         await fetchMovies();
       } else {
-        alert(data.message || "Không thể thêm phim!");
+        alert(data.message || "Không thể lưu thông tin phim!");
       }
     } catch (err) {
-      console.error("Lỗi thêm phim:", err);
+      console.error("Lỗi lưu phim:", err);
       alert("Lỗi kết nối server!");
     }
   };
@@ -133,7 +186,7 @@ function MovieList() {
           🎬 Quản Lý Phim ({movies.length})
         </h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleOpenAddModal}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -160,8 +213,13 @@ function MovieList() {
                 src={movie.posterUrl}
                 alt={movie.title}
                 className="w-20 h-28 object-cover rounded-md bg-slate-200"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src =
+                    "https://via.placeholder.com/150x225?text=No+Image";
+                }}
               />
-              <div className="flex-1 min-w-0 pr-8">
+              <div className="flex-1 min-w-0 pr-12">
                 <h3 className="font-bold text-slate-800 text-sm truncate">
                   {movie.title}
                 </h3>
@@ -172,25 +230,37 @@ function MovieList() {
                   {movie.description || "Không có mô tả"}
                 </p>
               </div>
-              <button
-                onClick={() => handleDeleteMovie(movie._id)}
-                className="absolute top-3 right-3 text-red-500 hover:text-red-700 p-1 cursor-pointer"
-                title="Xóa phim"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+
+              {/* 🌟 Nút Sửa & Xóa trên góc thẻ phim */}
+              <div className="absolute top-3 right-3 flex items-center gap-1">
+                <button
+                  onClick={() => handleOpenEditModal(movie)}
+                  className="text-amber-500 hover:text-amber-700 p-1 cursor-pointer"
+                  title="Sửa phim"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteMovie(movie._id)}
+                  className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                  title="Xóa phim"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {showAddModal && (
+      {/* 🌟 Modal Thêm / Sửa Phim */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl relative">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-800 mb-4">
-              🎬 Thêm Phim Mới
+              {isEditing ? "✏️ Chỉnh Sửa Thông Tin Phim" : "🎬 Thêm Phim Mới"}
             </h3>
-            <form onSubmit={handleAddMovie} className="space-y-4">
+            <form onSubmit={handleSubmitMovie} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Tên Phim
@@ -238,24 +308,43 @@ function MovieList() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Poster URL
+                  Ảnh Poster Phim
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://...jpg"
-                  value={posterUrl}
-                  onChange={(e) => setPosterUrl(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500"
-                />
+                <div className="flex items-center gap-3">
+                  <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-lg p-3 text-sm text-slate-600 cursor-pointer bg-slate-50 transition">
+                    <ImageIcon className="w-5 h-5 text-indigo-500" />
+                    <span>
+                      {posterUrl
+                        ? "Đã chọn ảnh poster"
+                        : "Chọn file ảnh mới (PNG, JPG)..."}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {/* Xem trước ảnh */}
+                {posterUrl && (
+                  <div className="mt-2 relative w-20 h-28 rounded-lg overflow-hidden border border-slate-200">
+                    <img
+                      src={posterUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Video URL
+                  Video URL (YouTube / MP4)
                 </label>
                 <input
                   type="url"
-                  placeholder="https://...mp4"
+                  placeholder="https://... hoặc link Youtube nhúng"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500"
@@ -265,7 +354,7 @@ function MovieList() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setShowModal(false)}
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-700 hover:bg-slate-300"
                 >
                   Hủy
@@ -274,7 +363,7 @@ function MovieList() {
                   type="submit"
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700"
                 >
-                  Thêm phim
+                  {isEditing ? "Lưu thay đổi" : "Thêm phim"}
                 </button>
               </div>
             </form>
@@ -286,4 +375,3 @@ function MovieList() {
 }
 
 export default MovieList;
-
