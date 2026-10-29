@@ -3,8 +3,9 @@ import Auth from "./components/Auth";
 import UserList from "./components/UserList";
 import Profile from "./components/Profile";
 import MovieList from "./components/MovieList";
+import Dashboard from "./components/Dashboard"; // 🌟 Nhớ import Dashboard (nơi chứa bảng duyệt đơn VIP)
 
-const MOVIE_APP_URL = "http://localhost:5174";
+const MOVIE_APP_URL = "http://localhost:5001/api/admin/users";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -13,6 +14,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("movie_token");
     localStorage.removeItem("user");
     setCurrentUser(null);
     setActiveTab("users");
@@ -20,7 +22,8 @@ function App() {
 
   useEffect(() => {
     const checkLoggedInUser = async () => {
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("movie_token");
 
       if (token) {
         try {
@@ -118,7 +121,7 @@ function App() {
 
               <button
                 onClick={handleLogout}
-                className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition"
+                className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition cursor-pointer"
               >
                 Đăng xuất
               </button>
@@ -132,10 +135,11 @@ function App() {
           <Auth onLoginSuccess={handleLoginSuccess} />
         ) : (
           <div className="max-w-4xl mx-auto">
-            <div className="flex justify-center gap-4 mb-6">
+            {/* 🌟 Thanh điều hướng các Tab Admin */}
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
               <button
                 onClick={() => setActiveTab("users")}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
                   activeTab === "users"
                     ? "bg-indigo-600 text-white shadow-md"
                     : "bg-white text-slate-600 hover:bg-slate-200"
@@ -145,7 +149,7 @@ function App() {
               </button>
               <button
                 onClick={() => setActiveTab("movies")}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
                   activeTab === "movies"
                     ? "bg-indigo-600 text-white shadow-md"
                     : "bg-white text-slate-600 hover:bg-slate-200"
@@ -153,9 +157,20 @@ function App() {
               >
                 🎬 Quản lý phim
               </button>
+              {/* 🌟 Tab Quản lý đơn VIP mới thêm */}
+              <button
+                onClick={() => setActiveTab("vipOrders")}
+                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
+                  activeTab === "vipOrders"
+                    ? "bg-yellow-500 text-slate-950 shadow-md font-bold"
+                    : "bg-white text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                👑 Duyệt đơn VIP
+              </button>
               <button
                 onClick={() => setActiveTab("profile")}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
                   activeTab === "profile"
                     ? "bg-indigo-600 text-white shadow-md"
                     : "bg-white text-slate-600 hover:bg-slate-200"
@@ -165,10 +180,19 @@ function App() {
               </button>
             </div>
 
+            {/* 🌟 Hiển thị Component tương ứng theo Tab */}
             {activeTab === "users" ? (
               <UserList />
             ) : activeTab === "movies" ? (
               <MovieList />
+            ) : activeTab === "vipOrders" ? (
+              <Dashboard
+                user={currentUser}
+                onLogout={handleLogout}
+                onUserUpdate={(updated) =>
+                  setCurrentUser((prev) => ({ ...prev, ...updated }))
+                }
+              />
             ) : (
               <Profile
                 currentUser={currentUser}
