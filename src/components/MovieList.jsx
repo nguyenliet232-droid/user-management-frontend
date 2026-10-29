@@ -15,6 +15,7 @@ function MovieList() {
   const [posterUrl, setPosterUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [category, setCategory] = useState("Hành động");
+  const [isVipOnly, setIsVipOnly] = useState(false); // 🌟 Thêm State quản lý VIP
 
   const fetchMovies = async () => {
     try {
@@ -74,6 +75,7 @@ function MovieList() {
     setPosterUrl("");
     setVideoUrl("");
     setCategory("Hành động");
+    setIsVipOnly(false); // Reset về mặc định
     setShowModal(true);
   };
 
@@ -86,6 +88,7 @@ function MovieList() {
     setPosterUrl(movie.posterUrl || "");
     setVideoUrl(movie.videoUrl || "");
     setCategory(movie.category || "Hành động");
+    setIsVipOnly(movie.isVipOnly || false); // Load trạng thái VIP cũ của phim
     setShowModal(true);
   };
 
@@ -123,6 +126,7 @@ function MovieList() {
           posterUrl,
           videoUrl,
           category,
+          isVipOnly, // 🌟 Gửi trạng thái VIP lên Backend khớp với Movie.js
         }),
       });
 
@@ -223,9 +227,17 @@ function MovieList() {
                 <h3 className="font-bold text-slate-800 text-sm truncate">
                   {movie.title}
                 </h3>
-                <span className="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded mt-1">
-                  {movie.category || "Hành động"}
-                </span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <span className="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded">
+                    {movie.category || "Hành động"}
+                  </span>
+                  {/* 🌟 Hiển thị huy hiệu VIP trên danh sách */}
+                  {movie.isVipOnly && (
+                    <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">
+                      👑 VIP
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500 line-clamp-2 mt-1">
                   {movie.description || "Không có mô tả"}
                 </p>
@@ -291,6 +303,23 @@ function MovieList() {
                   <option value="Hài hước">Hài hước</option>
                   <option value="Viễn tưởng">Viễn tưởng</option>
                 </select>
+              </div>
+
+              {/* 🌟 Checkbox cấu hình Phim VIP */}
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="isVipOnly"
+                  checked={isVipOnly}
+                  onChange={(e) => setIsVipOnly(e.target.checked)}
+                  className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="isVipOnly"
+                  className="text-xs font-semibold text-amber-900 cursor-pointer select-none"
+                >
+                  👑 Chỉ dành cho tài khoản VIP (isVipOnly)
+                </label>
               </div>
 
               <div>
