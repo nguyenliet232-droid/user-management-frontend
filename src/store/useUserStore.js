@@ -86,7 +86,7 @@ export const useUserStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const token = get().token || localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await fetch(`${API_URL}/admin/users`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
