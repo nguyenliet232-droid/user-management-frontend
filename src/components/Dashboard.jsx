@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import UserList from "./UserList"; // 🌟 Import component quản lý người dùng
 
 export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
+  // 🌟 Đặt mặc định mở tab "Quản Lý Đơn VIP" ngay khi vào
   const [activeTab, setActiveTab] = useState("vipOrders");
   const [name, setName] = useState(user?.name || "");
   const [avatar, setAvatar] = useState(user?.avatar || "");
@@ -179,7 +179,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </button>
       </div>
 
-      {/* Tabs Menu */}
+      {/* Tabs Menu (Đã loại bỏ nút Quản Lý Người Dùng) */}
       <div className="flex space-x-4 mt-6 border-b border-slate-800 overflow-x-auto">
         <button
           onClick={() => {
@@ -209,34 +209,19 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </button>
 
         {user?.role === "admin" && (
-          <>
-            <button
-              onClick={() => {
-                setActiveTab("vipOrders");
-                setMessage("");
-              }}
-              className={`pb-3 text-xs font-semibold transition cursor-pointer ${
-                activeTab === "vipOrders"
-                  ? "border-b-2 border-yellow-500 text-yellow-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              👑 Quản Lý Đơn VIP
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab("manageUsers");
-                setMessage("");
-              }}
-              className={`pb-3 text-xs font-semibold transition cursor-pointer ${
-                activeTab === "manageUsers"
-                  ? "border-b-2 border-indigo-500 text-indigo-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              👥 Quản Lý Người Dùng
-            </button>
-          </>
+          <button
+            onClick={() => {
+              setActiveTab("vipOrders");
+              setMessage("");
+            }}
+            className={`pb-3 text-xs font-semibold transition cursor-pointer ${
+              activeTab === "vipOrders"
+                ? "border-b-2 border-yellow-500 text-yellow-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            👑 Quản Lý Đơn VIP
+          </button>
         )}
       </div>
 
@@ -447,13 +432,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Tab: Quản lý người dùng */}
-      {activeTab === "manageUsers" && user?.role === "admin" && (
-        <div className="mt-6">
-          <UserList />
         </div>
       )}
     </div>
