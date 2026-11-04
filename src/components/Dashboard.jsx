@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import UserList from "./UserList"; // 🌟 Import component quản lý người dùng
 
 export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
   const [activeTab, setActiveTab] = useState("vipOrders");
@@ -178,6 +179,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </button>
       </div>
 
+      {/* Tabs Menu */}
       <div className="flex space-x-4 mt-6 border-b border-slate-800 overflow-x-auto">
         <button
           onClick={() => {
@@ -207,30 +209,50 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </button>
 
         {user?.role === "admin" && (
-          <button
-            onClick={() => {
-              setActiveTab("vipOrders");
-              setMessage("");
-            }}
-            className={`pb-3 text-xs font-semibold transition cursor-pointer ${
-              activeTab === "vipOrders"
-                ? "border-b-2 border-yellow-500 text-yellow-400"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            👑 Quản Lý Đơn VIP
-          </button>
+          <>
+            <button
+              onClick={() => {
+                setActiveTab("vipOrders");
+                setMessage("");
+              }}
+              className={`pb-3 text-xs font-semibold transition cursor-pointer ${
+                activeTab === "vipOrders"
+                  ? "border-b-2 border-yellow-500 text-yellow-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              👑 Quản Lý Đơn VIP
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("manageUsers");
+                setMessage("");
+              }}
+              className={`pb-3 text-xs font-semibold transition cursor-pointer ${
+                activeTab === "manageUsers"
+                  ? "border-b-2 border-indigo-500 text-indigo-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              👥 Quản Lý Người Dùng
+            </button>
+          </>
         )}
       </div>
 
       {message && (
         <div
-          className={`mt-4 p-3 rounded-xl text-xs font-medium text-center ${isSuccess ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-red-500/20 text-red-300 border border-red-500/30"}`}
+          className={`mt-4 p-3 rounded-xl text-xs font-medium text-center ${
+            isSuccess
+              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+              : "bg-red-500/20 text-red-300 border border-red-500/30"
+          }`}
         >
           {message}
         </div>
       )}
 
+      {/* Tab: Thông tin cá nhân */}
       {activeTab === "profile" && (
         <form
           onSubmit={handleUpdateProfile}
@@ -281,6 +303,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </form>
       )}
 
+      {/* Tab: Đổi mật khẩu */}
       {activeTab === "changePassword" && (
         <form
           onSubmit={handleChangePassword}
@@ -335,6 +358,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
         </form>
       )}
 
+      {/* Tab: Quản lý đơn VIP */}
       {activeTab === "vipOrders" && user?.role === "admin" && (
         <div className="mt-6 space-y-4">
           <h2 className="text-base font-bold text-yellow-400">
@@ -423,6 +447,13 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Quản lý người dùng */}
+      {activeTab === "manageUsers" && user?.role === "admin" && (
+        <div className="mt-6">
+          <UserList />
         </div>
       )}
     </div>

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "../store/useUserStore";
 import { useDebounce } from "../hooks/useDebounce";
 
+const API_URL = "http://localhost:5001/api";
+
 function UserList() {
   const {
     users,
@@ -34,6 +36,47 @@ function UserList() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handleRevokeVip = async (userId, userEmail) => {
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn hủy quyền VIP của tài khoản ${userEmail}?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // 🌟 Kiểm tra xem key lưu token trong localStorage của bạn là gì ("token" hay "movie_token")
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("movie_token");
+
+      console.log("Token đang gửi lên:", token); // Bấm F12 xem có in ra chuỗi token hay không (nếu là null/undefined thì do sai tên key)
+
+      const res = await fetch(
+        `http://localhost:5001/api/users/${userId}/revoke-vip`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Gửi token lên backend
+          },
+        },
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message);
+        fetchUsers(); // Tải lại danh sách user
+      } else {
+        alert(data.message || "Không thể hủy VIP!");
+      }
+    } catch (err) {
+      console.error("Lỗi kết nối:", err);
+      alert("Lỗi kết nối đến máy chủ khi hủy VIP!");
+    }
+  };
 
   // Lọc danh sách theo Tên, Email và Trạng thái VIP/Free
   const filteredUsers = users.filter((u) => {
@@ -166,18 +209,33 @@ function UserList() {
                 </div>
               </div>
 
-              {/* Nút Xóa (Chỉ hiện nếu là Admin và không phải tự xóa chính mình) */}
-              {isAdmin && !isSelf && (
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Bạn có chắc muốn xóa ${u.name}?`)) {
-                      deleteUser(userId);
-                    }
-                  }}
-                  className="self-end sm:self-center px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded-md transition cursor-pointer"
-                >
-                  Xóa
-                </button>
+              {/* Các thao tác Admin (Hủy VIP & Xóa) */}
+              {isAdmin && (
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  {/* Nút Hủy VIP (Chỉ hiện nếu user đang là VIP) */}
+                  {u.isVip && (
+                    <button
+                      onClick={() => handleRevokeVip(userId, u.email)}
+                      className="px-3 py-1.5 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium rounded-md transition cursor-pointer"
+                    >
+                      Hủy VIP
+                    </button>
+                  )}
+
+                  {/* Nút Xóa (Không cho phép tự xóa chính mình) */}
+                  {!isSelf && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Bạn có chắc muốn xóa ${u.name}?`)) {
+                          deleteUser(userId);
+                        }
+                      }}
+                      className="px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded-md transition cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
               )}
             </li>
           );

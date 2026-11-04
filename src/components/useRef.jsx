@@ -17,24 +17,26 @@ function UseRefDemo({ user, onAvatarUpdated }) {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ avatarUrl: base64Image }),
         },
       );
 
       const contentType = response.headers.get("content-type") || "";
-      const data = contentType.includes("application/json") ? await response.json() : { message: await response.text() || `HTTP ${response.status}` };
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : { message: (await response.text()) || `HTTP ${response.status}` };
       if (response.ok) {
         setAvatar(base64Image);
         if (onAvatarUpdated) onAvatarUpdated(base64Image);
-        alert("C?p nh?t ?nh ??i di?n th?nh c?ng!");
+        alert("Cập nhật ảnh đại diện thành công!");
       } else {
-        alert(data.message || "C?p nh?t th?t b?i!");
+        alert(data.message || "Cập nhật thất bại!");
       }
     } catch (error) {
-      console.error("L?i upload avatar:", error);
-      alert("L?i k?t n?i m?y ch?!");
+      console.error("Lỗi upload avatar:", error);
+      alert("Lỗi kết nối đến máy chủ!");
     }
   };
 
@@ -43,7 +45,7 @@ function UseRefDemo({ user, onAvatarUpdated }) {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Vui l?ng ch?n ?nh dung l??ng d??i 2MB!");
+      alert("Vui lòng chọn ảnh dung lượng dưới 2MB!");
       return;
     }
 
@@ -65,7 +67,9 @@ function UseRefDemo({ user, onAvatarUpdated }) {
         onChange={handleFileChange}
       />
       <img
-        src={avatar || "https://ui-avatars.com/api/?name=User&background=random"}
+        src={
+          avatar || "https://ui-avatars.com/api/?name=User&background=random"
+        }
         alt="avatar preview"
         onClick={handleImageClick}
         className="w-24 h-24 rounded-full object-cover cursor-pointer border-2 border-slate-200"
@@ -75,4 +79,3 @@ function UseRefDemo({ user, onAvatarUpdated }) {
 }
 
 export default UseRefDemo;
-

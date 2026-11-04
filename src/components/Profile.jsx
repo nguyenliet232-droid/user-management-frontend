@@ -54,7 +54,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Vui l?ng ch? ch?n file h?nh ?nh!");
+      alert("Vui lòng chọn file hình ảnh!");
       return;
     }
 
@@ -63,8 +63,8 @@ function Profile({ currentUser, onUpdateSuccess }) {
       const compressedBase64 = await compressImage(file);
       await uploadAvatarToBackend(compressedBase64);
     } catch (error) {
-      console.error("L?i khi n?n ?nh:", error);
-      setProfileMsg("? L?i n?n ?nh, vui l?ng th? l?i!");
+      console.error("Lỗi khi nén ảnh:", error);
+      setProfileMsg("Lỗi nén ảnh, vui lòng thử lại!");
       setIsProfileSuccess(false);
     } finally {
       setLoading(false);
@@ -91,7 +91,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
         ? await res.json()
         : { message: (await res.text()) || `HTTP ${res.status}` };
       if (res.ok) {
-        setProfileMsg("?? C?p nh?t ?nh ??i di?n th?nh c?ng!");
+        setProfileMsg("?? Cập nhật ảnh đại diện thành công!");
         setIsProfileSuccess(true);
 
         const updatedUser = { ...currentUser, avatar: base64Image, name };
@@ -99,11 +99,11 @@ function Profile({ currentUser, onUpdateSuccess }) {
 
         if (onUpdateSuccess) onUpdateSuccess(updatedUser);
       } else {
-        setProfileMsg(`? ${data.message || "C?p nh?t ?nh th?t b?i!"}`);
+        setProfileMsg(`? ${data.message || "Cập nhật ảnh thất bại!"}`);
         setIsProfileSuccess(false);
       }
     } catch {
-      setProfileMsg("? L?i k?t n?i ??n m?y ch?!");
+      setProfileMsg("? Lỗi kết nối đến máy chủ!");
       setIsProfileSuccess(false);
     }
   };
@@ -117,19 +117,19 @@ function Profile({ currentUser, onUpdateSuccess }) {
     e.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordMsg("? Vui lòng nhập mậy ?? m?t kh?u c? v? m?i!");
+      setPasswordMsg("? Vui lòng nhập đầy đủ thông tin!");
       setIsPasswordSuccess(false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMsg("? M?t kh?u m?i v? X?c nh?n m?t kh?u kh?ng kh?p!");
+      setPasswordMsg("? Mật khẩu mới và Xác nhận mật khẩu không khớp!");
       setIsPasswordSuccess(false);
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordMsg("? M?t kh?u m?i ph?i c? ?t nh?t 6 k? t?!");
+      setPasswordMsg("? Mật khẩu mới phải chứa ít nhất 6 ký tự!");
       setIsPasswordSuccess(false);
       return;
     }
@@ -153,17 +153,17 @@ function Profile({ currentUser, onUpdateSuccess }) {
         ? await res.json()
         : { message: (await res.text()) || `HTTP ${res.status}` };
       if (res.ok) {
-        setPasswordMsg("?? ??i m?t kh?u th?nh c?ng!");
+        setPasswordMsg("?? Đổi mật khẩu thành công!");
         setIsPasswordSuccess(true);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        setPasswordMsg(`? ${data.message || "??i m?t kh?u th?t b?i!"}`);
+        setPasswordMsg(`? ${data.message || "Đổi mật khẩu thất bại!"}`);
         setIsPasswordSuccess(false);
       }
     } catch {
-      setPasswordMsg("? L?i k?t n?i ??n m?y ch?!");
+      setPasswordMsg("? Lỗi kết nối đến máy chủ!");
       setIsPasswordSuccess(false);
     }
   };
@@ -191,7 +191,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
             className="w-28 h-28 rounded-full object-cover border-4 border-indigo-500 shadow-md group-hover:opacity-80 transition"
           />
           <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition">
-            {loading ? "?ang n?n..." : "??i ?nh"}
+            {loading ? "Đang nạp..." : "Đổi ảnh"}
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-2">
