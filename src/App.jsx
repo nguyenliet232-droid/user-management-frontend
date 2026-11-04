@@ -1,15 +1,15 @@
 ﻿import { useState, useEffect } from "react";
 import Auth from "./components/Auth";
-import UserList from "./components/UserList";
-import Profile from "./components/Profile";
 import MovieList from "./components/MovieList";
-import Dashboard from "./components/Dashboard"; // 🌟 Nhớ import Dashboard (nơi chứa bảng duyệt đơn VIP)
+import Profile from "./components/Profile";
+import Dashboard from "./components/Dashboard"; // Chứa bảng duyệt đơn VIP và đổi mật khẩu, hồ sơ
 
 const MOVIE_APP_URL = "http://localhost:5001/api/admin/users";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("users");
+  // 🌟 Đổi tab mặc định ban đầu thành "vipOrders" hoặc "movies"
+  const [activeTab, setActiveTab] = useState("vipOrders");
   const [loading, setLoading] = useState(true);
 
   const handleLogout = () => {
@@ -17,7 +17,7 @@ function App() {
     localStorage.removeItem("movie_token");
     localStorage.removeItem("user");
     setCurrentUser(null);
-    setActiveTab("users");
+    setActiveTab("vipOrders");
   };
 
   useEffect(() => {
@@ -135,18 +135,8 @@ function App() {
           <Auth onLoginSuccess={handleLoginSuccess} />
         ) : (
           <div className="max-w-4xl mx-auto">
-            {/* 🌟 Thanh điều hướng các Tab Admin */}
+            {/* 🌟 Thanh điều hướng các Tab Admin (Đã bỏ hoàn toàn nút Quản lý người dùng) */}
             <div className="flex flex-wrap justify-center gap-3 mb-6">
-              <button
-                onClick={() => setActiveTab("users")}
-                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
-                  activeTab === "users"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "bg-white text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                👥 Quản lý người dùng
-              </button>
               <button
                 onClick={() => setActiveTab("movies")}
                 className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
@@ -157,7 +147,7 @@ function App() {
               >
                 🎬 Quản lý phim
               </button>
-              {/* 🌟 Tab Quản lý đơn VIP mới thêm */}
+
               <button
                 onClick={() => setActiveTab("vipOrders")}
                 className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
@@ -168,6 +158,7 @@ function App() {
               >
                 👑 Duyệt đơn VIP
               </button>
+
               <button
                 onClick={() => setActiveTab("profile")}
                 className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
@@ -180,10 +171,8 @@ function App() {
               </button>
             </div>
 
-            {/* 🌟 Hiển thị Component tương ứng theo Tab */}
-            {activeTab === "users" ? (
-              <UserList />
-            ) : activeTab === "movies" ? (
+            {/* 🌟 Hiển thị Component tương ứng theo Tab (Không còn "users") */}
+            {activeTab === "movies" ? (
               <MovieList />
             ) : activeTab === "vipOrders" ? (
               <Dashboard
