@@ -3,3 +3,4 @@ const API_ORIGIN =
   "https://user-management-backend-7clg.onrender.com";
 
 export const API_URL = `${API_ORIGIN.replace(/\/+$/, "")}/api`;
+export const PROFILE_UPDATE_URL = `${API_URL}/users/update`;

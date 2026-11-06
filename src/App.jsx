@@ -2,7 +2,7 @@
 import Auth from "./components/Auth";
 import MovieList from "./components/MovieList";
 import Dashboard from "./components/Dashboard";
-import { API_URL } from "./config/api";
+import { API_URL, PROFILE_UPDATE_URL } from "./config/api";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -127,7 +127,7 @@ function App() {
       setUploadingAvatar(true);
       const compressedBase64 = await compressImage(file);
 
-      const res = await fetch(`${API_URL}/users/update`, {
+      const res = await fetch(PROFILE_UPDATE_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

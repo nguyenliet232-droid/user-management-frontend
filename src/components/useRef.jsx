@@ -1,5 +1,5 @@
 ﻿import { useRef, useState } from "react";
-import { API_URL } from "../config/api";
+import { PROFILE_UPDATE_URL } from "../config/api";
 
 function UseRefDemo({ user, onAvatarUpdated }) {
   const fileInputRef = useRef(null);
@@ -12,7 +12,7 @@ function UseRefDemo({ user, onAvatarUpdated }) {
   const uploadAvatarToBackend = async (base64Image) => {
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("movie_token");
-      const response = await fetch(`${API_URL}/users/profile`, {
+      const response = await fetch(PROFILE_UPDATE_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

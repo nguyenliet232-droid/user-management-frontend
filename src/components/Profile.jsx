@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from "react";
-import { API_URL } from "../config/api";
+import { API_URL, PROFILE_UPDATE_URL } from "../config/api";
 
 function Profile({ currentUser, onUpdateSuccess }) {
   const [name, setName] = useState(currentUser?.name || "");
@@ -79,7 +79,7 @@ function Profile({ currentUser, onUpdateSuccess }) {
     const token =
       localStorage.getItem("token") || localStorage.getItem("movie_token");
     try {
-      const res = await fetch(`${API_URL}/users/profile`, {
+      const res = await fetch(PROFILE_UPDATE_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

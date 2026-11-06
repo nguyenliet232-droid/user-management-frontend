@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Edit3, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Image as ImageIcon,
+  RefreshCw,
+} from "lucide-react";
 import { API_URL } from "../config/api";
 
 function MovieList() {
@@ -8,13 +14,14 @@ function MovieList() {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editMovieId, setEditMovieId] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [posterUrl, setPosterUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [category, setCategory] = useState("Hành động");
-  const [isVipOnly, setIsVipOnly] = useState(false); // 🌟 Thêm State quản lý VIP
+  const [isVipOnly, setIsVipOnly] = useState(false);
 
   const fetchMovies = useCallback(async () => {
     try {
@@ -50,23 +57,23 @@ function MovieList() {
     void fetchMovies();
   }, [fetchMovies]);
 
-  // Xử lý chọn ảnh từ máy tính (Base64)
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPosterUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+      e.target.value = "";
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") setPosterUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
-  // Mở modal thêm mới
   const handleOpenAddModal = () => {
     setIsEditing(false);
     setEditMovieId(null);
@@ -75,11 +82,10 @@ function MovieList() {
     setPosterUrl("");
     setVideoUrl("");
     setCategory("Hành động");
-    setIsVipOnly(false); // Reset về mặc định
+    setIsVipOnly(false);
     setShowModal(true);
   };
 
-  // Mở modal sửa phim (Điền sẵn thông tin cũ)
   const handleOpenEditModal = (movie) => {
     setIsEditing(true);
     setEditMovieId(movie._id);
@@ -88,11 +94,10 @@ function MovieList() {
     setPosterUrl(movie.posterUrl || "");
     setVideoUrl(movie.videoUrl || "");
     setCategory(movie.category || "Hành động");
-    setIsVipOnly(movie.isVipOnly || false); // Load trạng thái VIP cũ của phim
+    setIsVipOnly(Boolean(movie.isVipOnly));
     setShowModal(true);
   };
 
-  // Gửi dữ liệu Thêm mới hoặc Cập nhật
   const handleSubmitMovie = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -109,13 +114,10 @@ function MovieList() {
 
     try {
       const url = isEditing
-        ? `${API_URL}/movies/${editMovieId}`
+        ? `${API_URL}/movies/${encodeURIComponent(editMovieId)}`
         : `${API_URL}/movies`;
-
-      const method = isEditing ? "PUT" : "POST";
-
       const res = await fetch(url, {
-        method: method,
+        method: isEditing ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -126,29 +128,23 @@ function MovieList() {
           posterUrl,
           videoUrl,
           category,
-          isVipOnly, // 🌟 Gửi trạng thái VIP lên Backend khớp với Movie.js
+          isVipOnly,
         }),
       });
 
-      let data = {};
       const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: (await res.text()) || `HTTP ${res.status}` };
 
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        data = { message: text || `HTTP ${res.status}` };
-      }
-
-      if (res.ok) {
-        alert(
-          isEditing ? "Cập nhật phim thành công!" : "🎉 Thêm phim thành công!",
-        );
-        setShowModal(false);
-        await fetchMovies();
-      } else {
+      if (!res.ok) {
         alert(data.message || "Không thể lưu thông tin phim!");
+        return;
       }
+
+      alert(isEditing ? "Cập nhật phim thành công!" : "🎉 Thêm phim thành công!");
+      setShowModal(false);
+      await fetchMovies();
     } catch (err) {
       console.error("Lỗi lưu phim:", err);
       alert("Lỗi kết nối server!");
@@ -165,21 +161,66 @@ function MovieList() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/movies/${id}`, {
+      const res = await fetch(`${API_URL}/movies/${encodeURIComponent(id)}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type") || "";
+        const data = contentType.includes("application/json")
+          ? await res.json()
+          : null;
+        alert(data?.message || "Không thể xóa phim!");
+        return;
+      }
+
+      alert("Xóa phim thành công!");
+      await fetchMovies();
+    } catch (err) {
+      console.error("Lỗi xóa phim:", err);
+      alert("Lỗi kết nối server!");
+    }
+  };
+
+  const handleSyncTMDB = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Vui lòng đăng nhập tài khoản Admin!");
+      return;
+    }
+
+    if (!confirm("Bạn có muốn đồng bộ danh sách phim mới nhất từ TMDB không?")) {
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      const res = await fetch(`${API_URL}/admin/sync-tmdb`, {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (res.ok) {
-        alert("Xóa phim thành công!");
-        await fetchMovies();
-      } else {
-        alert("Không thể xóa phim!");
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: (await res.text()) || `HTTP ${res.status}` };
+
+      if (!res.ok) {
+        alert(data.message || "Không thể đồng bộ phim từ TMDB!");
+        return;
       }
+
+      alert(data.message || "Đồng bộ phim từ TMDB thành công!");
+      await fetchMovies();
     } catch (err) {
-      console.error("Lỗi xóa phim:", err);
+      console.error("Lỗi đồng bộ TMDB:", err);
+      alert("Lỗi kết nối khi gọi TMDB API!");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -189,13 +230,23 @@ function MovieList() {
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           🎬 Quản Lý Phim ({movies.length})
         </h2>
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Thêm Phim Mới
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSyncTMDB}
+            disabled={syncing}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer disabled:bg-slate-400"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Đang đồng bộ..." : "🎬 Đồng bộ TMDB"}
+          </button>
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Thêm Phim Mới
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -218,8 +269,8 @@ function MovieList() {
                 alt={movie.title}
                 className="w-20 h-28 object-cover rounded-md bg-slate-200"
                 onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src =
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src =
                     "https://via.placeholder.com/150x225?text=No+Image";
                 }}
               />
@@ -231,7 +282,6 @@ function MovieList() {
                   <span className="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded">
                     {movie.category || "Hành động"}
                   </span>
-                  {/* 🌟 Hiển thị huy hiệu VIP trên danh sách */}
                   {movie.isVipOnly && (
                     <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">
                       👑 VIP
@@ -242,13 +292,12 @@ function MovieList() {
                   {movie.description || "Không có mô tả"}
                 </p>
               </div>
-
-              {/* 🌟 Nút Sửa & Xóa trên góc thẻ phim */}
               <div className="absolute top-3 right-3 flex items-center gap-1">
                 <button
                   onClick={() => handleOpenEditModal(movie)}
                   className="text-amber-500 hover:text-amber-700 p-1 cursor-pointer"
                   title="Sửa phim"
+                  aria-label={`Sửa phim ${movie.title}`}
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -256,6 +305,7 @@ function MovieList() {
                   onClick={() => handleDeleteMovie(movie._id)}
                   className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
                   title="Xóa phim"
+                  aria-label={`Xóa phim ${movie.title}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -265,7 +315,6 @@ function MovieList() {
         </div>
       )}
 
-      {/* 🌟 Modal Thêm / Sửa Phim */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
@@ -286,7 +335,6 @@ function MovieList() {
                   className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Thể Loại Phim
@@ -304,8 +352,6 @@ function MovieList() {
                   <option value="Viễn tưởng">Viễn tưởng</option>
                 </select>
               </div>
-
-              {/* 🌟 Checkbox cấu hình Phim VIP */}
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 p-3 rounded-lg">
                 <input
                   type="checkbox"
@@ -321,7 +367,6 @@ function MovieList() {
                   👑 Chỉ dành cho tài khoản VIP (isVipOnly)
                 </label>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Mô Tả
@@ -334,39 +379,34 @@ function MovieList() {
                   className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Ảnh Poster Phim
                 </label>
-                <div className="flex items-center gap-3">
-                  <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-lg p-3 text-sm text-slate-600 cursor-pointer bg-slate-50 transition">
-                    <ImageIcon className="w-5 h-5 text-indigo-500" />
-                    <span>
-                      {posterUrl
-                        ? "Đã chọn ảnh poster"
-                        : "Chọn file ảnh mới (PNG, JPG)..."}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {/* Xem trước ảnh */}
+                <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-lg p-3 text-sm text-slate-600 cursor-pointer bg-slate-50 transition">
+                  <ImageIcon className="w-5 h-5 text-indigo-500" />
+                  <span>
+                    {posterUrl
+                      ? "Đã chọn ảnh poster"
+                      : "Chọn file ảnh mới (PNG, JPG)..."}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
                 {posterUrl && (
                   <div className="mt-2 relative w-20 h-28 rounded-lg overflow-hidden border border-slate-200">
                     <img
                       src={posterUrl}
-                      alt="Preview"
+                      alt="Xem trước poster"
                       className="w-full h-full object-cover"
                     />
                   </div>
                 )}
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Video URL (YouTube / MP4)
@@ -379,7 +419,6 @@ function MovieList() {
                   className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
-
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import UserList from "./UserList"; // 🌟 Import component quản lý người dùng
-import { API_URL } from "../config/api";
+import { API_URL, PROFILE_UPDATE_URL } from "../config/api";
 
 export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
   const [activeTab, setActiveTab] = useState("vipOrders");
@@ -92,7 +92,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${API_URL}/users/profile`, {
+      const res = await fetch(PROFILE_UPDATE_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
