@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
+import { API_URL } from "../config/api";
 
 function UseRefDemo({ user, onAvatarUpdated }) {
   const fileInputRef = useRef(null);
@@ -10,18 +11,15 @@ function UseRefDemo({ user, onAvatarUpdated }) {
 
   const uploadAvatarToBackend = async (base64Image) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        "https://user-management-backend-7clg.onrender.com/api/users/avatar",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ avatarUrl: base64Image }),
+      const token = localStorage.getItem("token") || localStorage.getItem("movie_token");
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` ,
         },
-      );
+        body: JSON.stringify({ avatar: base64Image, name: user?.name || "" }),
+      });
 
       const contentType = response.headers.get("content-type") || "";
       const data = contentType.includes("application/json")
@@ -30,17 +28,17 @@ function UseRefDemo({ user, onAvatarUpdated }) {
       if (response.ok) {
         setAvatar(base64Image);
         if (onAvatarUpdated) onAvatarUpdated(base64Image);
-        alert("Cập nhật ảnh đại diện thành công!");
+        alert("C?p nh?t ?nh ??i di?n th?nh c?ng!");
       } else {
-        alert(data.message || "Cập nhật thất bại!");
+        alert(data.message || "C?p nh?t th?t b?i!");
       }
     } catch (error) {
-      console.error("Lỗi upload avatar:", error);
-      alert("Lỗi kết nối đến máy chủ!");
+      console.error("L?i upload avatar:", error);
+      alert("L?i k?t n?i ??n m?y ch?!");
     }
   };
 
-  const handleFileChange = async (e) => {
+    const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 

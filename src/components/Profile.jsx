@@ -1,4 +1,5 @@
 ﻿import { useState, useRef } from "react";
+import { API_URL } from "../config/api";
 
 function Profile({ currentUser, onUpdateSuccess }) {
   const [name, setName] = useState(currentUser?.name || "");
@@ -8,15 +9,17 @@ function Profile({ currentUser, onUpdateSuccess }) {
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
   const [isPasswordSuccess, setIsPasswordSuccess] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fileInputRef = useRef(null);
 
+  // Nén ảnh trước khi upload để tối ưu dung lượng
   const compressImage = (file, maxWidth = 300, quality = 0.7) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -61,109 +64,115 @@ function Profile({ currentUser, onUpdateSuccess }) {
     try {
       setLoading(true);
       const compressedBase64 = await compressImage(file);
-      await uploadAvatarToBackend(compressedBase64);
+      await updateProfileBackend(compressedBase64, name);
     } catch (error) {
       console.error("Lỗi khi nén ảnh:", error);
-      setProfileMsg("Lỗi nén ảnh, vui lòng thử lại!");
+      setProfileMsg("❌ Lỗi nén ảnh, vui lòng thử lại!");
       setIsProfileSuccess(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const uploadAvatarToBackend = async (base64Image) => {
-    const token = localStorage.getItem("token");
+  // Hàm gọi API cập nhật thông tin (Tên và Avatar)
+  const updateProfileBackend = async (newAvatar, newName) => {
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("movie_token");
     try {
-      const res = await fetch(
-        "https://user-management-backend-7clg.onrender.com/api/users/profile",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ avatar: base64Image, name }),
+      const res = await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ avatar: newAvatar, name: newName }),
+      });
 
       const contentType = res.headers.get("content-type") || "";
       const data = contentType.includes("application/json")
         ? await res.json()
         : { message: (await res.text()) || `HTTP ${res.status}` };
+
       if (res.ok) {
-        setProfileMsg("?? Cập nhật ảnh đại diện thành công!");
+        setProfileMsg("? C?p nh?t h? s? th?nh c?ng!");
         setIsProfileSuccess(true);
 
-        const updatedUser = { ...currentUser, avatar: base64Image, name };
+        const updatedUser = {
+          ...currentUser,
+          avatar: newAvatar,
+          name: newName,
+        };
         localStorage.setItem("user", JSON.stringify(updatedUser));
 
         if (onUpdateSuccess) onUpdateSuccess(updatedUser);
       } else {
-        setProfileMsg(`? ${data.message || "Cập nhật ảnh thất bại!"}`);
+        setProfileMsg(`? ${data.message || "C?p nh?t th?t b?i!"}`);
         setIsProfileSuccess(false);
       }
     } catch {
-      setProfileMsg("? Lỗi kết nối đến máy chủ!");
+      setProfileMsg("? L?i k?t n?i ??n m?y ch?!");
       setIsProfileSuccess(false);
     }
   };
 
-  const handleUpdateProfile = async (e) => {
+  const handleUpdateName = async (e) => {
     e.preventDefault();
-    await uploadAvatarToBackend(currentUser?.avatar);
+    setLoading(true);
+    await updateProfileBackend(currentUser?.avatar, name);
+    setLoading(false);
   };
 
+  // Hàm đổi mật khẩu
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordMsg("? Vui lòng nhập đầy đủ thông tin!");
+      setPasswordMsg("? Vui l?ng nh?p ??y ?? th?ng tin m?t kh?u!");
       setIsPasswordSuccess(false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMsg("? Mật khẩu mới và Xác nhận mật khẩu không khớp!");
+      setPasswordMsg("? M?t kh?u m?i v? X?c nh?n m?t kh?u kh?ng kh?p!");
       setIsPasswordSuccess(false);
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordMsg("? Mật khẩu mới phải chứa ít nhất 6 ký tự!");
+      setPasswordMsg("? M?t kh?u m?i ph?i ch?a ?t nh?t 6 k? t?!");
       setIsPasswordSuccess(false);
       return;
     }
 
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("movie_token");
     try {
-      const res = await fetch(
-        "https://user-management-backend-7clg.onrender.com/api/users/change-password",
-        {
-          method: "PUT",
-          headers: {
-            "Content-type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ currentPassword, newPassword }),
+      const res = await fetch(`${API_URL}/users/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
 
       const contentType = res.headers.get("content-type") || "";
       const data = contentType.includes("application/json")
         ? await res.json()
         : { message: (await res.text()) || `HTTP ${res.status}` };
+
       if (res.ok) {
-        setPasswordMsg("?? Đổi mật khẩu thành công!");
+        setPasswordMsg("? ??i m?t kh?u th?nh c?ng!");
         setIsPasswordSuccess(true);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        setPasswordMsg(`? ${data.message || "Đổi mật khẩu thất bại!"}`);
+        setPasswordMsg(`? ${data.message || "??i m?t kh?u th?t b?i!"}`);
         setIsPasswordSuccess(false);
       }
     } catch {
-      setPasswordMsg("? Lỗi kết nối đến máy chủ!");
+      setPasswordMsg("? L?i k?t n?i ??n m?y ch?!");
       setIsPasswordSuccess(false);
     }
   };
@@ -175,11 +184,12 @@ function Profile({ currentUser, onUpdateSuccess }) {
   };
 
   return (
-    <div className="max-w-md mx-auto my-8 p-6 bg-white rounded-xl shadow-lg space-y-6">
-      <h3 className="text-xl font-bold text-center text-slate-800 flex items-center justify-center gap-2">
-        Quản Lý Tài Khoản
+    <div className="max-w-xl mx-auto my-8 p-6 bg-white rounded-2xl shadow-xl space-y-8">
+      <h3 className="text-xl font-bold text-center text-slate-800">
+        🛡️ Hồ Sơ Admin & Cài Đặt
       </h3>
 
+      {/* Phần Avatar */}
       <div className="flex flex-col items-center">
         <div
           onClick={() => fileInputRef.current.click()}
@@ -190,12 +200,12 @@ function Profile({ currentUser, onUpdateSuccess }) {
             alt="Avatar"
             className="w-28 h-28 rounded-full object-cover border-4 border-indigo-500 shadow-md group-hover:opacity-80 transition"
           />
-          <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition">
-            {loading ? "Đang nạp..." : "Đổi ảnh"}
+          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition">
+            {loading ? "Đang tải..." : "Đổi ảnh"}
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-2">
-          Bấm vào hình ảnh để thay đổi
+          Bấm vào hình ảnh để thay đổi ảnh đại diện
         </p>
 
         <input
@@ -209,19 +219,57 @@ function Profile({ currentUser, onUpdateSuccess }) {
 
       {profileMsg && (
         <p
-          className={`p-2 text-sm rounded-lg text-center ${
+          className={`p-2.5 text-xs rounded-lg text-center font-medium ${
             isProfileSuccess
-              ? "bg-green-50 text-green-600"
-              : "bg-red-50 text-red-600"
+              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+              : "bg-red-50 text-red-600 border border-red-200"
           }`}
         >
           {profileMsg}
         </p>
       )}
 
-      <form onSubmit={handleChangePassword} className="space-y-4">
+      {/* Form Cập nhật Họ tên */}
+      <form
+        onSubmit={handleUpdateName}
+        className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-100"
+      >
+        <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+          Thông tin hiển thị
+        </h4>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-1">
+            Họ và tên
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+            placeholder="Nhập họ và tên..."
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow transition cursor-pointer disabled:opacity-50"
+        >
+          {loading ? "Đang lưu..." : "Cập Nhật Tên"}
+        </button>
+      </form>
+
+      {/* Form Đổi mật khẩu */}
+      <form
+        onSubmit={handleChangePassword}
+        className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-100"
+      >
+        <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+          Bảo mật tài khoản
+        </h4>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-700 mb-1">
             Mật khẩu hiện tại
           </label>
           <div className="relative">
@@ -229,21 +277,21 @@ function Profile({ currentUser, onUpdateSuccess }) {
               type={showCurrentPassword ? "text" : "password"}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
               placeholder="Nhập mật khẩu hiện tại"
             />
             <button
               type="button"
               onClick={() => setShowCurrentPassword((prev) => !prev)}
-              className="absolute right-3 top-2.5 text-slate-500"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-semibold cursor-pointer"
             >
-              {showCurrentPassword ? "??" : "???"}
+              {showCurrentPassword ? "Ẩn" : "Hiện"}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-1">
             Mật khẩu mới
           </label>
           <div className="relative">
@@ -251,21 +299,21 @@ function Profile({ currentUser, onUpdateSuccess }) {
               type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="Nhập mật khẩu mới"
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
             />
             <button
               type="button"
               onClick={() => setShowNewPassword((prev) => !prev)}
-              className="absolute right-3 top-2.5 text-slate-500"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-semibold cursor-pointer"
             >
-              {showNewPassword ? "??" : "???"}
+              {showNewPassword ? "Ẩn" : "Hiện"}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-1">
             Xác nhận mật khẩu mới
           </label>
           <div className="relative">
@@ -273,25 +321,25 @@ function Profile({ currentUser, onUpdateSuccess }) {
               type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
               placeholder="Nhập lại mật khẩu mới"
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute right-3 top-2.5 text-slate-500"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-semibold cursor-pointer"
             >
-              {showConfirmPassword ? "??" : "???"}
+              {showConfirmPassword ? "Ẩn" : "Hiện"}
             </button>
           </div>
         </div>
 
         {passwordMsg && (
           <p
-            className={`p-2 text-sm rounded-lg text-center ${
+            className={`p-2.5 text-xs rounded-lg text-center font-medium ${
               isPasswordSuccess
-                ? "bg-green-50 text-green-600"
-                : "bg-red-50 text-red-600"
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                : "bg-red-50 text-red-600 border border-red-200"
             }`}
           >
             {passwordMsg}
@@ -300,9 +348,9 @@ function Profile({ currentUser, onUpdateSuccess }) {
 
         <button
           type="submit"
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition"
+          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow transition cursor-pointer"
         >
-          Đổi mật khẩu
+          Đổi Mật Khẩu
         </button>
       </form>
     </div>

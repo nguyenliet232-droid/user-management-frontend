@@ -1,16 +1,15 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import Auth from "./components/Auth";
 import MovieList from "./components/MovieList";
-import Profile from "./components/Profile";
-import Dashboard from "./components/Dashboard"; // Chứa bảng duyệt đơn VIP và đổi mật khẩu, hồ sơ
-
-const MOVIE_APP_URL = "http://localhost:5001/api/admin/users";
+import Dashboard from "./components/Dashboard";
+import { API_URL } from "./config/api";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  // 🌟 Đổi tab mặc định ban đầu thành "vipOrders" hoặc "movies"
   const [activeTab, setActiveTab] = useState("vipOrders");
   const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -27,15 +26,12 @@ function App() {
 
       if (token) {
         try {
-          const res = await fetch(
-            "https://user-management-backend-7clg.onrender.com/api/users/profile",
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
+          const res = await fetch(`${API_URL}/users/profile`, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-          );
+          });
 
           const contentType = res.headers.get("content-type") || "";
           const data = contentType.includes("application/json")
@@ -45,10 +41,9 @@ function App() {
           if (res.ok) {
             if (data.role?.toLowerCase() !== "admin") {
               alert(
-                "⛔ Tài khoản của bạn là Người dùng thường! Đang chuyển sang Trang Xem Phim...",
+                "⛔ Tài khoản của bạn không phải quản trị viên. Vui lòng đăng nhập bằng tài khoản admin.",
               );
               handleLogout();
-              window.location.href = MOVIE_APP_URL;
               return;
             }
 
@@ -71,14 +66,94 @@ function App() {
 
   const handleLoginSuccess = (user) => {
     if (user.role?.toLowerCase() !== "admin") {
-      alert("🎉 Đăng nhập thành công! Đang chuyển sang Trang Xem Phim...");
+      alert(
+        "🎉 Đăng nhập thành công, nhưng tài khoản này không có quyền Admin.",
+      );
       handleLogout();
-      window.location.href = MOVIE_APP_URL;
       return;
     }
 
     setCurrentUser(user);
     localStorage.setItem("user", JSON.stringify(user));
+  };
+
+  // Hàm nén ảnh trước khi tải lên
+  const compressImage = (file, maxWidth = 300, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else if (height > maxWidth) {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+      };
+    });
+  };
+
+  // Xử lý đổi ảnh đại diện trực tiếp từ Header
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file hình ảnh!");
+      return;
+    }
+
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("movie_token");
+
+    try {
+      setUploadingAvatar(true);
+      const compressedBase64 = await compressImage(file);
+
+      const res = await fetch(`${API_URL}/users/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          avatar: compressedBase64,
+          name: currentUser?.name,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("✨ Cập nhật ảnh đại diện thành công!");
+        const updatedUser = { ...currentUser, avatar: compressedBase64 };
+        setCurrentUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      } else {
+        alert(data.message || "Cập nhật ảnh thất bại!");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối máy chủ khi đổi ảnh!");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const getHeaderAvatar = (user) => {
@@ -107,12 +182,31 @@ function App() {
 
           {currentUser && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                <img
-                  src={getHeaderAvatar(currentUser)}
-                  alt="Avatar"
-                  className="w-6 h-6 rounded-full object-cover border border-indigo-400"
+              {/* Ô hiển thị thông tin Admin kèm tính năng bấm vào Avatar để đổi ảnh */}
+              <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                <div
+                  onClick={() => fileInputRef.current.click()}
+                  className="relative group cursor-pointer"
+                  title="Bấm vào để đổi ảnh đại diện"
+                >
+                  <img
+                    src={getHeaderAvatar(currentUser)}
+                    alt="Avatar"
+                    className="w-7 h-7 rounded-full object-cover border border-indigo-400 group-hover:opacity-70 transition"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center text-[8px] text-white bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition">
+                    {uploadingAvatar ? "..." : "Sửa"}
+                  </div>
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
                 />
+
                 <span className="text-sm font-medium">{currentUser.name}</span>
                 <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 font-bold uppercase">
                   ADMIN
@@ -135,7 +229,7 @@ function App() {
           <Auth onLoginSuccess={handleLoginSuccess} />
         ) : (
           <div className="max-w-4xl mx-auto">
-            {/* 🌟 Thanh điều hướng các Tab Admin (Đã bỏ hoàn toàn nút Quản lý người dùng) */}
+            {/* Thanh điều hướng gọn gàng chỉ có Quản lý phim và Duyệt đơn VIP */}
             <div className="flex flex-wrap justify-center gap-3 mb-6">
               <button
                 onClick={() => setActiveTab("movies")}
@@ -158,38 +252,17 @@ function App() {
               >
                 👑 Duyệt đơn VIP
               </button>
-
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={`px-4 py-2 rounded-lg font-semibold transition cursor-pointer ${
-                  activeTab === "profile"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "bg-white text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                👤 Hồ sơ Admin
-              </button>
             </div>
 
-            {/* 🌟 Hiển thị Component tương ứng theo Tab (Không còn "users") */}
+            {/* Hiển thị component tương ứng */}
             {activeTab === "movies" ? (
               <MovieList />
-            ) : activeTab === "vipOrders" ? (
+            ) : (
               <Dashboard
                 user={currentUser}
                 onLogout={handleLogout}
                 onUserUpdate={(updated) =>
                   setCurrentUser((prev) => ({ ...prev, ...updated }))
-                }
-              />
-            ) : (
-              <Profile
-                currentUser={currentUser}
-                onUpdateSuccess={(updatedUser) =>
-                  setCurrentUser((prev) => ({
-                    ...prev,
-                    ...updatedUser,
-                  }))
                 }
               />
             )}

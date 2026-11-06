@@ -1,6 +1,5 @@
 import { create } from "zustand";
-
-const API_URL = "https://user-management-backend-7clg.onrender.com/api";
+import { API_URL } from "../config/api";
 
 const getStoredUser = () => {
   const storedUser = localStorage.getItem("user");

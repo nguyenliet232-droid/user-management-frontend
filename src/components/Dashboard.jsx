@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UserList from "./UserList"; // 🌟 Import component quản lý người dùng
+import { API_URL } from "../config/api";
 
 export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
   const [activeTab, setActiveTab] = useState("vipOrders");
@@ -14,45 +15,62 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
 
   const [vipOrders, setVipOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState("");
 
-  const BASE_URL = "http://localhost:5001";
   const token =
     localStorage.getItem("token") || localStorage.getItem("movie_token");
 
-  const fetchVipOrders = async () => {
+  const fetchVipOrders = useCallback(async () => {
     if (user?.role !== "admin") return;
     setLoadingOrders(true);
+    setOrdersError("");
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/vip-orders`, {
+      const res = await fetch(`${API_URL}/admin/vip-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setVipOrders(data);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          res.status === 401
+            ? "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại."
+            : data.message || `HTTP ${res.status}`,
+        );
       }
+
+      if (!Array.isArray(data)) {
+        throw new Error("Dữ liệu đơn VIP không hợp lệ.");
+      }
+
+      setVipOrders(data);
     } catch (err) {
       console.error("Lỗi tải đơn VIP:", err);
+      setOrdersError(
+        err instanceof Error ? err.message : "Không thể tải đơn VIP.",
+      );
     } finally {
       setLoadingOrders(false);
     }
-  };
+  }, [token, user?.role]);
 
   useEffect(() => {
-    if (activeTab === "vipOrders") {
-      fetchVipOrders();
-    }
-  }, [activeTab]);
+    if (activeTab !== "vipOrders") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchVipOrders();
+  }, [activeTab, fetchVipOrders]);
 
   const handleVipAction = async (orderId, action) => {
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/vip-orders/${orderId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${API_URL}/admin/vip-orders/${encodeURIComponent(orderId)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action }),
         },
-        body: JSON.stringify({ action }),
-      });
+      );
       const data = await res.json();
       if (res.ok) {
         if (showToast) showToast(data.message, "success");
@@ -74,7 +92,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/users/update-profile`, {
+      const res = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +108,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
       if (res.ok) {
         setMessage("✨ Cập nhật thông tin thành công!");
         setIsSuccess(true);
-        if (onUserUpdate) onUserUpdate(data.user);
+        if (onUserUpdate) {
+          onUserUpdate(data.user || { ...user, name, avatar });
+        }
       } else {
         setMessage(`❌ ${data.message || "Cập nhật thất bại!"}`);
         setIsSuccess(false);
@@ -115,13 +135,13 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/users/change-password`, {
+      const res = await fetch(`${API_URL}/users/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ oldPassword, newPassword }),
+        body: JSON.stringify({ currentPassword: oldPassword, newPassword }),
       });
 
       const contentType = res.headers.get("content-type") || "";
@@ -368,6 +388,19 @@ export default function Dashboard({ user, onLogout, onUserUpdate, showToast }) {
             <p className="text-xs text-slate-400 text-center py-6">
               Đang tải danh sách đơn hàng...
             </p>
+          ) : ordersError ? (
+            <div
+              role="alert"
+              className="text-sm text-red-300 text-center py-6 space-y-3"
+            >
+              <p>{ordersError}</p>
+              <button
+                onClick={() => void fetchVipOrders()}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"
+              >
+                Thử tải lại
+              </button>
+            </div>
           ) : vipOrders.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-6">
               Chưa có đơn yêu cầu nâng cấp VIP nào.

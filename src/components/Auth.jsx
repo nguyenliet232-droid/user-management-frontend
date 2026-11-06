@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_URL } from "../config/api";
 
 function Auth({ onLoginSuccess }) {
   // Điều hướng form
@@ -24,7 +25,22 @@ function Auth({ onLoginSuccess }) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const BASE_URL = "https://user-management-backend-7clg.onrender.com";
+  const parseResponseData = async (res) => {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      return res.json();
+    }
+
+    const text = await res.text();
+    return { message: text || `HTTP ${res.status}` };
+  };
+
+  const getFriendlyErrorMessage = (status, fallback) => {
+    if (status === 401) return "❌ Tài khoản hoặc mật khẩu không đúng!";
+    if (status === 404) return "❌ Không tìm thấy dịch vụ xác thực. Vui lòng thử lại sau.";
+    if (status >= 500) return "❌ Máy chủ đang gặp sự cố. Vui lòng thử lại sau.";
+    return fallback;
+  };
 
   // Reset toàn bộ input khi chuyển tab/chế độ
   const resetFormState = () => {
@@ -40,24 +56,36 @@ function Auth({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseData(res);
 
       if (res.ok) {
+        if (
+          typeof data?.token !== "string" ||
+          !data.token ||
+          !data.user ||
+          typeof data.user !== "object" ||
+          Array.isArray(data.user)
+        ) {
+          throw new Error("Phản hồi đăng nhập không hợp lệ.");
+        }
+
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         if (onLoginSuccess) onLoginSuccess(data.user);
       } else {
-        setMessage(`❌ ${data.message || "Thao tác thất bại!"}`);
+        const fallbackMessage = data?.message || "Thao tác thất bại!";
+        setMessage(getFriendlyErrorMessage(res.status, `❌ ${fallbackMessage}`));
         setIsSuccess(false);
       }
-    } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+    } catch (error) {
+      console.error("Login error:", error);
+      setMessage("❌ Lỗi kết nối máy chủ hoặc phản hồi không hợp lệ!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -77,23 +105,25 @@ function Auth({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/send-register-otp`, {
+      const res = await fetch(`${API_URL}/auth/send-register-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseData(res);
       if (res.ok) {
         setMessage(`📩 ${data.message}`);
         setIsSuccess(true);
         setRegOtpSent(true);
       } else {
-        setMessage(`❌ ${data.message || "Gửi OTP thất bại!"}`);
+        const fallbackMessage = data?.message || "Gửi OTP thất bại!";
+        setMessage(getFriendlyErrorMessage(res.status, `❌ ${fallbackMessage}`));
         setIsSuccess(false);
       }
-    } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+    } catch (error) {
+      console.error("Send register OTP error:", error);
+      setMessage("❌ Lỗi kết nối máy chủ hoặc phản hồi không hợp lệ!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -107,13 +137,13 @@ function Auth({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/verify-register-otp`, {
+      const res = await fetch(`${API_URL}/auth/verify-register-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, otp: registerOtp }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseData(res);
       if (res.ok) {
         setMessage("🎉 Đăng ký thành công! Vui lòng đăng nhập.");
         setIsSuccess(true);
@@ -125,11 +155,13 @@ function Auth({ onLoginSuccess }) {
           resetFormState();
         }, 2000);
       } else {
-        setMessage(`❌ ${data.message || "Xác thực OTP thất bại!"}`);
+        const fallbackMessage = data?.message || "Xác thực OTP thất bại!";
+        setMessage(getFriendlyErrorMessage(res.status, `❌ ${fallbackMessage}`));
         setIsSuccess(false);
       }
-    } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+    } catch (error) {
+      console.error("Verify register OTP error:", error);
+      setMessage("❌ Lỗi kết nối máy chủ hoặc phản hồi không hợp lệ!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -143,23 +175,25 @@ function Auth({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseData(res);
       if (res.ok) {
         setMessage(`🎉 ${data.message}`);
         setIsSuccess(true);
         setOtpSent(true);
       } else {
-        setMessage(`❌ ${data.message}`);
+        const fallbackMessage = data?.message || "Gửi OTP thất bại!";
+        setMessage(getFriendlyErrorMessage(res.status, `❌ ${fallbackMessage}`));
         setIsSuccess(false);
       }
-    } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      setMessage("❌ Lỗi kết nối máy chủ hoặc phản hồi không hợp lệ!");
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -173,13 +207,13 @@ function Auth({ onLoginSuccess }) {
     setMessage("");
 
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, newPassword }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseData(res);
       if (res.ok) {
         setMessage(`🎉 ${data.message}`);
         setIsSuccess(true);
@@ -190,11 +224,13 @@ function Auth({ onLoginSuccess }) {
           resetFormState();
         }, 2000);
       } else {
-        setMessage(`❌ ${data.message}`);
+        const fallbackMessage = data?.message || "Đặt lại mật khẩu thất bại!";
+        setMessage(getFriendlyErrorMessage(res.status, `❌ ${fallbackMessage}`));
         setIsSuccess(false);
       }
-    } catch {
-      setMessage("❌ Lỗi kết nối máy chủ!");
+    } catch (error) {
+      console.error("Reset password error:", error);
+      setMessage("❌ Lỗi kết nối máy chủ hoặc phản hồi không hợp lệ!");
       setIsSuccess(false);
     } finally {
       setLoading(false);

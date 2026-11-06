@@ -1,7 +1,6 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Edit3, Image as ImageIcon } from "lucide-react";
-
-const API_URL = "https://user-management-backend-7clg.onrender.com/api";
+import { API_URL } from "../config/api";
 
 function MovieList() {
   const [movies, setMovies] = useState([]);
@@ -17,7 +16,7 @@ function MovieList() {
   const [category, setCategory] = useState("Hành động");
   const [isVipOnly, setIsVipOnly] = useState(false); // 🌟 Thêm State quản lý VIP
 
-  const fetchMovies = async () => {
+  const fetchMovies = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/movies`, {
@@ -44,11 +43,12 @@ function MovieList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchMovies();
+  }, [fetchMovies]);
 
   // Xử lý chọn ảnh từ máy tính (Base64)
   const handleImageChange = (e) => {
