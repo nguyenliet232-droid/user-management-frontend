@@ -142,7 +142,9 @@ function MovieList() {
         return;
       }
 
-      alert(isEditing ? "Cập nhật phim thành công!" : "🎉 Thêm phim thành công!");
+      alert(
+        isEditing ? "Cập nhật phim thành công!" : "🎉 Thêm phim thành công!",
+      );
       setShowModal(false);
       await fetchMovies();
     } catch (err) {
@@ -190,7 +192,9 @@ function MovieList() {
       return;
     }
 
-    if (!confirm("Bạn có muốn đồng bộ danh sách phim mới nhất từ TMDB không?")) {
+    if (
+      !confirm("Bạn có muốn đồng bộ danh sách phim mới nhất từ TMDB không?")
+    ) {
       return;
     }
 
@@ -265,9 +269,13 @@ function MovieList() {
               className="border border-slate-200 rounded-lg p-3 flex gap-3 relative bg-slate-50"
             >
               <img
-                src={movie.posterUrl}
+                src={
+                  movie.poster ||
+                  movie.posterUrl ||
+                  "https://via.placeholder.com/150x225?text=No+Image"
+                }
                 alt={movie.title}
-                className="w-20 h-28 object-cover rounded-md bg-slate-200"
+                className="w-20 h-28 object-cover rounded-md bg-slate-200 shrink-0"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src =
